@@ -43,34 +43,50 @@ class Board:
         
         for d in range(len(self.directions)):
         # Try to apply the move in all directions from the current cell
-            self.apply_direction_if_valid(index, d, player)
+            turns = self.get_turns_in_direction(index, d, player)
+            if turns:
+                self.set_list_cells(turns + [index], player)
+                #print("Turns: ", turns, "Direction: ", self.directions[d])
             
-    def apply_direction_if_valid(self, index, direction, player):
+    def get_turns_in_direction(self, index, direction, player):
         
         turns = []
-        flipping = False
-        start_index = index
-        # Check if the move is valid in the given direction
-        for _ in range(self.moves_to_edge[index, direction]):
-            index += self.directions[direction]
-            if not flipping:
-                if self.get_cell(index) != -player:
-                    break
-                else:
-                    flipping = True
-                    turns.append(index)
-            else:
-                if self.get_cell(index) == player:
-                    self.set_list_cells(turns + [index], player)
-                    self.set_cell(start_index, player)
-                    print("Turns: ", turns, "Direction: ", self.directions[direction])
-                    break                    
-                elif self.get_cell(index) == -player:
-                    turns.append(index)
-                else:
-                    break
+        i = 1
+        next_index = index + self.directions[direction]
         
-    
+        while i <= self.moves_to_edge[index, direction] and self.get_cell(next_index) == -player:
+            turns.append(next_index)
+            next_index += self.directions[direction]
+            i += 1
+        
+        if i <= self.moves_to_edge[index, direction] and self.get_cell(next_index) == player:
+            return turns
+        else:
+            return []
+            
+        
+    def get_possible_moves(self, player):
+        
+        moves = []
+        
+        for index in self.get_player_tiles(player):
+            # Check all directions from the player's tiles
+            for d in range(len(self.directions)):
+                for i in range(1, self.moves_to_edge[index, d]):
+                    next_index = index + self.directions[d] * i
+                    # If the current cell is of the opposite color
+                    if self.get_cell(next_index) == -player:
+                        # And the next is empty, add as a possible move
+                        if self.get_cell(next_index + self.directions[d]) == 0:
+                            if (next_index + self.directions[d]) not in moves:
+                                moves.append(next_index + self.directions[d])
+                            break
+                    # If the current cell is empty
+                    else:
+                        break
+            
+        return moves
+                    
     
     # def apply_direction(self, index, direction, player):
     #     turns = []
@@ -107,6 +123,9 @@ class Board:
     #             # Recursively check the next cell in the same direction
     #             return self.is_valid_direction(index + direction, direction, player, True, turns + [index + direction])
 
+    def get_player_tiles(self, player):
+        return np.where(self.board == player)[0]
+    
     def compute_moves_to_edge(self):
         moves_to_edge = np.zeros((self.size * self.size, len(self.directions)), dtype=int)
         
@@ -156,8 +175,8 @@ if __name__ == '__main__':
     board = Board()
     board.display_board()
     
-    board.apply_move(27, -1)
-    
-    board
-    
+    print(board.get_player_tiles(-1))
+    moves = board.get_possible_moves(-1)
+    for move in moves:
+        print(move // board.size, move % board.size)
     
